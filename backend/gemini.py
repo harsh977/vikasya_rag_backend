@@ -8,27 +8,50 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-# Function to generate polite responses to customer reviews
-def generate_response(new_review: str, embedding: list):
+def generate_response(new_feedback: str, historical_feedbacks: list):
+    history_str = "\n".join(f"- {fb}" for fb in historical_feedbacks) if historical_feedbacks else "No similar past feedbacks"
+    
     prompt = f"""
-You are a polite and professional public service assistant.
+You are a government service feedback analyst. Use the new feedback and only relevant historical feedbacks (same service type or very closely related issues) to craft a very brief response.
 
-Customer review: "{new_review}"
-Reply to the customer courteously, acknowledging their feedback, and providing any relevant guidance or steps for improvement.
+New Feedback:
+{new_feedback}
+
+Relevant Historical Feedbacks:
+{history_str}
+
+Instructions:
+- ONLY refer to historical feedbacks that are clearly about the SAME service type or issue.
+- DO NOT mix unrelated topics (e.g., if the user mentions water supply, do not refer to garbage disposal).
+- DO NOT invent or assume any new details (no fake contact info, plans, phone numbers, etc.).
+- If no exact historical match is found, just acknowledge the user's feedback and assure a review.
+- Keep the response polite, formal, and professional.
+
+Response:
 """
     res = model.generate_content(prompt)
     return res.text.strip()
 
-# Function to generate a summary of multiple public service reviews
-def generate_summary(reviews: list, embeddings: list):
-    # Combine all the reviews into a single paragraph for summary generation
-    joined_reviews = "\n".join(f"- {rev}" for rev in reviews)
-    print(joined_reviews)
+def generate_summary(main_feedbacks: list, similar_feedbacks: list):
+    main_str = "\n".join(f"- {fb}" for fb in main_feedbacks)
+    similar_str = "\n".join(f"- {fb}" for fb in similar_feedbacks) if similar_feedbacks else "None"
+    
     prompt = f"""
-Summarize the following customer reviews regarding public services into 5-6 lines , highlighting the key sentiments, areas for improvement, and any recurring themes , display point wise for better understanding.
-kust summarize the reviews , dont ask to provide any feedback or response to the reviews.:
+Analyze these main feedbacks and related similar feedbacks to create a comprehensive summary:
 
-{joined_reviews}
+Main Feedbacks:
+{main_str}
+
+Related Similar Feedbacks:
+{similar_str}
+
+Summarize in 3-5 bullet points:
+- Key common issues
+- Recurring positive feedback
+- Critical areas needing improvement
+- Suggested priority actions
+
+Use concise professional language suitable for government reports:
 """
     res = model.generate_content(prompt)
     return res.text.strip()

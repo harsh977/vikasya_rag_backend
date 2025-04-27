@@ -3,28 +3,25 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
+DIMENSION = 384
 
-DIM = 384  # embedding size
-index = None
-id_map = {}  # maps FAISS ID to MongoDB ID
-
-def init_faiss():
-    global index, id_map
-    index = faiss.IndexFlatL2(DIM)
-    id_map = {}
-    return index, id_map
+class VectorDB:
+    def __init__(self):
+        self.index = faiss.IndexFlatL2(DIMENSION)
+        self.id_map = {}
+    
+    def add_vector(self, mongo_id: str, embedding: list):
+        vector = np.array([embedding], dtype=np.float32)
+        faiss_id = len(self.id_map)
+        self.index.add(vector)
+        self.id_map[faiss_id] = mongo_id
+    
+    def query_vectors(self, query_embedding: list, top_k: int = 3):
+        vector = np.array([query_embedding], dtype=np.float32)
+        _, indices = self.index.search(vector, top_k)
+        return [self.id_map[i] for i in indices[0] if i in self.id_map]
 
 def embed_text(text: str):
     embedding = model.encode([text])[0]
     return embedding.tolist()
 
-def add_to_faiss(index, id_map, mongo_id: str, embedding: list):
-    vec = np.array([embedding]).astype("float32")
-    faiss_id = len(id_map)
-    index.add(vec)
-    id_map[faiss_id] = mongo_id
-
-def query_faiss(index, query_text: str, top_k=5):
-    embedding = model.encode([query_text]).astype("float32")
-    D, I = index.search(embedding, top_k)
-    return I[0]  # return FAISS indices of closest reviews
