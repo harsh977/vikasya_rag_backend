@@ -25,7 +25,8 @@ def generate_summary(reviews: list, embeddings: list):
     joined_reviews = "\n".join(f"- {rev}" for rev in reviews)
     print(joined_reviews)
     prompt = f"""
-Summarize the following customer reviews regarding public services into 5-6 lines , highlighting the key sentiments, areas for improvement, and any recurring themes , display point wise for better understanding.:
+Summarize the following customer reviews regarding public services into 5-6 lines , highlighting the key sentiments, areas for improvement, and any recurring themes , display point wise for better understanding.
+kust summarize the reviews , dont ask to provide any feedback or response to the reviews.:
 
 {joined_reviews}
 """
